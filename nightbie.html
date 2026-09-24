@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NIGHTBITE – Late Night Cravings Delivered</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --card: #1a1a22;
+    --card-hover: #22222c;
+    --accent: #00e676;
+    --accent-dark: #00c853;
+    --text: #ffffff;
+    --muted: #a0a0b0;
+    --danger: #ff5252;
+    --border: #2a2a35;
+    --radius: 16px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  /* ===== HEADER ===== */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(15,15,19,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+  }
+  .header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .logo {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, #00e676, #69f0ae);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    white-space: nowrap;
+  }
+  .search-box {
+    flex: 1;
+    position: relative;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 14px 20px 14px 48px;
+    border-radius: 50px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: white;
+    font-size: 15px;
+    outline: none;
+    transition: 0.2s;
+  }
+  .search-box input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,230,118,0.15);
+  }
+  .search-box::before {
+    content: "🔍";
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+  }
+  .cart-btn {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: white;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .cart-btn:hover { background: var(--card-hover); border-color: var(--accent); }
+  .cart-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--accent);
+    color: #000;
+    font-size: 12px;
+    font-weight: 700;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* ===== CATEGORIES ===== */
+  .categories {
+    max-width: 1280px;
+    margin: 24px auto 8px;
+    padding: 0 20px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .categories::-webkit-scrollbar { display: none; }
+  .cat-btn {
+    flex-shrink: 0;
+    padding: 10px 22px;
+    border-radius: 50px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .cat-btn.active, .cat-btn:hover {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+  /* ===== PRODUCTS ===== */
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .section-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 28px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .product-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: 0.25s;
+    display: flex;
+    flex-direction: column;
+  }
+  .product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow);
+    border-color: #333;
+  }
+  .product-img {
+    height: 160px;
+    background: #121218;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    position: relative;
+  }
+  .badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--danger);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .product-info {
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .product-name {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .product-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    flex: 1;
+  }
+  .product-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .price {
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--accent);
+  }
+  .add-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .add-btn:hover { background: var(--accent-dark); }
+  .add-btn:disabled {
+    background: #333;
+    color: #777;
+    cursor: not-allowed;
+  }
+  /* ===== CART DRAWER ===== */
+  .cart-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s;
+  }
+  .cart-overlay.open { opacity: 1; visibility: visible; }
+  .cart-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    max-width: 420px;
+    height: 100%;
+    background: var(--bg);
+    z-index: 210;
+    transform: translateX(100%);
+    transition: 0.35s cubic-bezier(0.4,0,0.2,1);
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border);
+  }
+  .cart-drawer.open { transform: translateX(0); }
+  .cart-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cart-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .cart-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .cart-item-img {
+    width: 60px;
+    height: 60px;
+    background: var(--card);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+  .qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .qty-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .cart-footer {
+    padding: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .buyer-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .buyer-fields label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
+    display: block;
+  }
+  .buyer-fields input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: white;
+    font-size: 15px;
+    outline: none;
+    transition: 0.2s;
+  }
+  .buyer-fields input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,230,118,0.15);
+  }
+  .buyer-fields input::placeholder {
+    color: #666;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .checkout-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .checkout-btn:hover { background: var(--accent-dark); }
+  .checkout-btn:disabled {
+    background: #333;
+    color: #777;
+    cursor: not-allowed;
+  }
+  .checkout-btn .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #000;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .checkout-btn.loading .spinner { display: block; }
+  .checkout-btn.loading .btn-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* ===== EMPTY / FUNNY ===== */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .emoji { font-size: 64px; margin-bottom: 16px; }
+  /* ===== DEVELOPER PANEL ===== */
+  .dev-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .dev-panel {
+    background: #16161e;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 28px;
+  }
+  .dev-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .dev-header h2 {
+    font-size: 1.5rem;
+    color: var(--accent);
+  }
+  .dev-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .dev-table th, .dev-table td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .dev-table th { color: var(--muted); font-weight: 600; }
+  .dev-table input, .dev-table select {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+  }
+  .dev-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-sm {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn-save { background: var(--accent); color: #000; }
+  .btn-del { background: var(--danger); color: white; }
+  .btn-add {
+    background: #2979ff;
+    color: white;
+    margin-top: 20px;
+    padding: 12px 24px;
+  }
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #222;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 50px;
+    font-weight: 600;
+    z-index: 999;
+    transition: 0.35s;
+    border: 1px solid var(--border);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  /* ===== ORDER SUCCESS ===== */
+  .success-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 400;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .success-box {
+    background: var(--card);
+    padding: 40px;
+    border-radius: 24px;
+    text-align: center;
+    max-width: 400px;
+  }
+  .success-box .big { font-size: 72px; margin-bottom: 16px; }
+  /* Responsive */
+  @media (max-width: 600px) {
+    .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .product-img { height: 120px; font-size: 48px; }
+  }
+</style>
+</head>
+<body>
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="logo">NIGHTBITE</div>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search chips, noodles, biscuits..." autocomplete="off">
+    </div>
+    <button class="cart-btn" onclick="toggleCart()">
+      🛒
+      <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+</header>
+<!-- CATEGORIES -->
+<div class="categories" id="categories">
+  <button class="cat-btn active" data-cat="all">All</button>
+  <button class="cat-btn" data-cat="chips">Chips</button>
+  <button class="cat-btn" data-cat="noodles">Noodles</button>
+  <button class="cat-btn" data-cat="biscuits">Biscuits</button>
+  <button class="cat-btn" data-cat="misc">Miscellaneous</button>
+</div>
+<!-- MAIN -->
+<div class="container">
+  <div id="productsContainer"></div>
+</div>
+<!-- CART -->
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-header">
+    <h3>Your Cart</h3>
+    <button onclick="toggleCart()" style="background:none;border:none;color:white;font-size:24px;cursor:pointer">×</button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-footer">
+    <!-- Buyer details for COD -->
+    <div class="buyer-fields" id="buyerFields">
+      <div>
+        <label for="buyerName">Your Name *</label>
+        <input type="text" id="buyerName" placeholder="e.g. Rahul Sharma" required autocomplete="name">
+      </div>
+      <div>
+        <label for="roomNumber">Room Number *</label>
+        <input type="text" id="roomNumber" placeholder="e.g. B-204 / Hostel 3 Room 12" required>
+      </div>
+    </div>
+    <div class="total-row">
+      <span>Total</span>
+      <span id="cartTotal">₹0</span>
+    </div>
+    <button class="checkout-btn" id="checkoutBtn" onclick="placeOrder()">
+      <span class="spinner"></span>
+      <span class="btn-text">Pay with Cash on Delivery 💵</span>
+    </button>
+  </div>
+</div>
+<!-- DEVELOPER PANEL -->
+<div class="dev-overlay" id="devOverlay">
+  <div class="dev-panel">
+    <div class="dev-header">
+      <h2>🛠️ Developer Mode – NIGHTBITE</h2>
+      <button onclick="closeDev()" style="background:none;border:none;color:white;font-size:28px;cursor:pointer">×</button>
+    </div>
+    <p style="color:var(--muted);margin-bottom:20px">Edit prices, availability, names… everything is live & saved.</p>
+    <table class="dev-table">
+      <thead>
+        <tr>
+          <th>Emoji</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Price (₹)</th>
+          <th>Stock</th>
+          <th>Available</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="devTableBody"></tbody>
+    </table>
+    <button class="btn-sm btn-add" onclick="addNewProduct()">+ Add New Product</button>
+  </div>
+</div>
+<!-- SUCCESS MODAL -->
+<div class="success-modal" id="successModal">
+  <div class="success-box">
+    <div class="big">🎉</div>
+    <h2>Order Placed!</h2>
+    <p style="color:var(--muted);margin:12px 0 24px" id="successMsg">Cash on Delivery selected.<br>Your night bites are on the way 🌙</p>
+    <button class="checkout-btn" onclick="closeSuccess()">Awesome!</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+// ====================== DATA ======================
+const DEFAULT_PRODUCTS = [
+  { id: 1, name: "Lay's Classic Salted", category: "chips", price: 20, stock: 45, available: true, emoji: "🥔", desc: "Crispy perfection" },
+  { id: 2, name: "Kurkure Masala Munch", category: "chips", price: 20, stock: 30, available: true, emoji: "🌶️", desc: "Spicy crunch attack" },
+  { id: 3, name: "Uncle Chipps Spiced", category: "chips", price: 20, stock: 25, available: true, emoji: "🔥", desc: "Desi tadka" },
+  { id: 4, name: "Maggi 2-Minute", category: "noodles", price: 14, stock: 80, available: true, emoji: "🍜", desc: "The classic saviour" },
+  { id: 5, name: "Yippee Noodles", category: "noodles", price: 20, stock: 40, available: true, emoji: "🥢", desc: "Long & tasty" },
+  { id: 6, name: "Top Ramen Curry", category: "noodles", price: 18, stock: 35, available: true, emoji: "🍲", desc: "Curry kick" },
+  { id: 7, name: "Parle-G Gold", category: "biscuits", price: 10, stock: 100, available: true, emoji: "🍪", desc: "Glucose power" },
+  { id: 8, name: "Oreo Original", category: "biscuits", price: 30, stock: 50, available: true, emoji: "🖤", desc: "Twist lick dunk" },
+  { id: 9, name: "Good Day Butter", category: "biscuits", price: 25, stock: 40, available: true, emoji: "🧈", desc: "Buttery bliss" },
+  { id: 10, name: "Hide & Seek", category: "biscuits", price: 30, stock: 35, available: true, emoji: "🍫", desc: "Chocolate chips" },
+  { id: 11, name: "Haldiram's Bhujia", category: "misc", price: 40, stock: 20, available: true, emoji: "🥜", desc: "Sev heaven" },
+  { id: 12, name: "Cadbury Dairy Milk", category: "misc", price: 40, stock: 60, available: true, emoji: "🍫", desc: "Melt in mouth" },
+  { id: 13, name: "Bingo Mad Angles", category: "chips", price: 20, stock: 28, available: true, emoji: "🔺", desc: "Triangle fun" },
+  { id: 14, name: "Sunfeast Dark Fantasy", category: "biscuits", price: 35, stock: 22, available: true, emoji: "🌑", desc: "Choco-filled" },
+  { id: 15, name: "Instant Cup Noodles", category: "noodles", price: 50, stock: 15, available: true, emoji: "🥡", desc: "Just add water" },
+];
+let products = JSON.parse(localStorage.getItem('nightbite_products')) || DEFAULT_PRODUCTS;
+let cart = JSON.parse(localStorage.getItem('nightbite_cart')) || [];
+let currentCategory = 'all';
+let secretBuffer = '';
+// ====================== INIT ======================
+function saveProducts() {
+  localStorage.setItem('nightbite_products', JSON.stringify(products));
+}
+function saveCart() {
+  localStorage.setItem('nightbite_cart', JSON.stringify(cart));
+  updateCartCount();
+}
+function renderProducts(filter = '') {
+  const container = document.getElementById('productsContainer');
+  let filtered = products.filter(p => {
+    const matchCat = currentCategory === 'all' || p.category === currentCategory;
+    const matchSearch = !filter || p.name.toLowerCase().includes(filter.toLowerCase()) || p.desc.toLowerCase().includes(filter.toLowerCase());
+    return matchCat && matchSearch;
+  });
+  if (filtered.length === 0) {
+    const funny = [
+      "😅 Oops! Even the night owls couldn't find that.",
+      "🕵️ Item went on a midnight adventure... not back yet!",
+      "🌙 The snack gods said 'not tonight'.",
+      "🚀 That item is currently orbiting Mars.",
+      "🍕 We checked under the sofa... still missing.",
+      "👻 It vanished faster than free pizza at a party."
+    ];
+    const msg = funny[Math.floor(Math.random() * funny.length)];
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">😕</div>
+        <h3>${msg}</h3>
+        <p style="margin-top:8px">Try searching something else or check other categories!</p>
+      </div>`;
+    return;
+  }
+  // Group by category for nicer display when "all"
+  const categoriesOrder = ['chips', 'noodles', 'biscuits', 'misc'];
+  let html = '';
+  if (currentCategory === 'all' && !filter) {
+    categoriesOrder.forEach(cat => {
+      const items = filtered.filter(p => p.category === cat);
+      if (items.length === 0) return;
+      const titles = { chips: '🥔 Chips', noodles: '🍜 Noodles', biscuits: '🍪 Biscuits', misc: '✨ Miscellaneous' };
+      html += `<div class="section-title">${titles[cat]}</div><div class="products-grid">`;
+      items.forEach(p => html += productCard(p));
+      html += `</div>`;
+    });
+  } else {
+    html = `<div class="products-grid">`;
+    filtered.forEach(p => html += productCard(p));
+    html += `</div>`;
+  }
+  container.innerHTML = html;
+}
+function productCard(p) {
+  return `
+    <div class="product-card">
+      <div class="product-img">
+        ${p.emoji}
+        ${!p.available || p.stock <= 0 ? '<span class="badge">Sold Out</span>' : ''}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-desc">${p.desc}</div>
+        <div class="product-footer">
+          <div class="price">₹${p.price}</div>
+          <button class="add-btn" 
+            ${!p.available || p.stock <= 0 ? 'disabled' : ''} 
+            onclick="addToCart(${p.id})">
+            ${!p.available || p.stock <= 0 ? 'Sold Out' : 'ADD'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+// ====================== CART ======================
+function addToCart(id) {
+  const product = products.find(p => p.id === id);
+  if (!product || !product.available || product.stock <= 0) return;
+  const existing = cart.find(c => c.id === id);
+  if (existing) {
+    if (existing.qty >= product.stock) {
+      showToast("That's all we have left 😢");
+      return;
+    }
+    existing.qty++;
+  } else {
+    cart.push({ id, qty: 1 });
+  }
+  saveCart();
+  renderCart();
+  showToast(`${product.emoji} Added to cart!`);
+}
+function changeQty(id, delta) {
+  const item = cart.find(c => c.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart = cart.filter(c => c.id !== id);
+  saveCart();
+  renderCart();
+}
+function renderCart() {
+  const container = document.getElementById('cartItems');
+  if (cart.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="emoji">🛒</div><p>Your cart is empty... fill it with midnight munchies!</p></div>`;
+    document.getElementById('cartTotal').textContent = '₹0';
+    return;
+  }
+  let total = 0;
+  let html = '';
+  cart.forEach(item => {
+    const p = products.find(pr => pr.id === item.id);
+    if (!p) return;
+    const sub = p.price * item.qty;
+    total += sub;
+    html += `
+      <div class="cart-item">
+        <div class="cart-item-img">${p.emoji}</div>
+        <div style="flex:1">
+          <div style="font-weight:600">${p.name}</div>
+          <div style="color:var(--accent);font-weight:700">₹${p.price}</div>
+          <div class="qty-controls">
+            <button class="qty-btn" onclick="changeQty(${p.id}, -1)">−</button>
+            <span>${item.qty}</span>
+            <button class="qty-btn" onclick="changeQty(${p.id}, 1)">+</button>
+          </div>
+        </div>
+        <div style="font-weight:700">₹${sub}</div>
+      </div>`;
+  });
+  container.innerHTML = html;
+  document.getElementById('cartTotal').textContent = `₹${total}`;
+}
+function updateCartCount() {
+  const count = cart.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('cartCount').textContent = count;
+}
+function toggleCart() {
+  document.getElementById('cartOverlay').classList.toggle('open');
+  document.getElementById('cartDrawer').classList.toggle('open');
+  renderCart();
+}
+
+// ====================== PLACE ORDER + EMAIL ======================
+async function placeOrder() {
+  if (cart.length === 0) {
+    showToast("Cart is empty 😅");
+    return;
+  }
+
+  const name = document.getElementById('buyerName').value.trim();
+  const room = document.getElementById('roomNumber').value.trim();
+
+  if (!name) {
+    showToast("Please enter your name");
+    document.getElementById('buyerName').focus();
+    return;
+  }
+  if (!room) {
+    showToast("Please enter your room number");
+    document.getElementById('roomNumber').focus();
+    return;
+  }
+
+  const btn = document.getElementById('checkoutBtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+
+  // Build order summary
+  let orderLines = [];
+  let total = 0;
+  cart.forEach(item => {
+    const p = products.find(pr => pr.id === item.id);
+    if (!p) return;
+    const sub = p.price * item.qty;
+    total += sub;
+    orderLines.push(`${p.emoji} ${p.name} × ${item.qty} = ₹${sub}`);
+  });
+
+  const orderText = orderLines.join('\n');
+  const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+  // Send email via FormSubmit (fast, no backend, no API keys)
+  try {
+    const response = await fetch('https://formsubmit.co/ajax/bitenight.07@gmail.com', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        _subject: `🌙 New Nightbite Order – Room ${room}`,
+        name: name,
+        room_number: room,
+        total: `₹${total}`,
+        order_items: orderText,
+        payment: 'Cash on Delivery',
+        ordered_at: now,
+        _template: 'table',
+        _captcha: 'false'
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success === 'false' || result.success === false) {
+      // Still proceed with local order even if email has issues (first-time confirmation etc.)
+      console.warn('Email service response:', result);
+    }
+  } catch (err) {
+    console.warn('Email send failed (order still placed locally):', err);
+    // We still complete the order so the buyer is not blocked
+  }
+
+  // Reduce stock
+  cart.forEach(item => {
+    const p = products.find(pr => pr.id === item.id);
+    if (p) p.stock = Math.max(0, p.stock - item.qty);
+  });
+  saveProducts();
+
+  // Clear cart & form
+  cart = [];
+  saveCart();
+  document.getElementById('buyerName').value = '';
+  document.getElementById('roomNumber').value = '';
+
+  btn.disabled = false;
+  btn.classList.remove('loading');
+
+  toggleCart();
+  document.getElementById('successMsg').innerHTML =
+    `Cash on Delivery selected.<br>Order for <strong>${name}</strong> (Room <strong>${room}</strong>) is on the way 🌙`;
+  document.getElementById('successModal').style.display = 'flex';
+  renderProducts(document.getElementById('searchInput').value);
+  showToast('Order placed & notified! 🚀');
+}
+
+function closeSuccess() {
+  document.getElementById('successModal').style.display = 'none';
+}
+// ====================== DEVELOPER MODE ======================
+function openDev() {
+  document.getElementById('devOverlay').style.display = 'flex';
+  renderDevTable();
+}
+function closeDev() {
+  document.getElementById('devOverlay').style.display = 'none';
+}
+function renderDevTable() {
+  const tbody = document.getElementById('devTableBody');
+  tbody.innerHTML = products.map(p => `
+    <tr data-id="${p.id}">
+      <td><input value="${p.emoji}" onchange="updateProduct(${p.id}, 'emoji', this.value)" style="width:50px;text-align:center"></td>
+      <td><input value="${p.name}" onchange="updateProduct(${p.id}, 'name', this.value)"></td>
+      <td>
+        <select onchange="updateProduct(${p.id}, 'category', this.value)">
+          <option value="chips" ${p.category==='chips'?'selected':''}>chips</option>
+          <option value="noodles" ${p.category==='noodles'?'selected':''}>noodles</option>
+          <option value="biscuits" ${p.category==='biscuits'?'selected':''}>biscuits</option>
+          <option value="misc" ${p.category==='misc'?'selected':''}>misc</option>
+        </select>
+      </td>
+      <td><input type="number" value="${p.price}" onchange="updateProduct(${p.id}, 'price', +this.value)" style="width:70px"></td>
+      <td><input type="number" value="${p.stock}" onchange="updateProduct(${p.id}, 'stock', +this.value)" style="width:60px"></td>
+      <td>
+        <select onchange="updateProduct(${p.id}, 'available', this.value === 'true')">
+          <option value="true" ${p.available?'selected':''}>Yes</option>
+          <option value="false" ${!p.available?'selected':''}>No</option>
+        </select>
+      </td>
+      <td class="dev-actions">
+        <button class="btn-sm btn-del" onclick="deleteProduct(${p.id})">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function updateProduct(id, field, value) {
+  const p = products.find(pr => pr.id === id);
+  if (p) {
+    p[field] = value;
+    saveProducts();
+    renderProducts(document.getElementById('searchInput').value);
+    showToast('Updated ✓');
+  }
+}
+function deleteProduct(id) {
+  if (!confirm('Delete this product forever?')) return;
+  products = products.filter(p => p.id !== id);
+  cart = cart.filter(c => c.id !== id);
+  saveProducts();
+  saveCart();
+  renderDevTable();
+  renderProducts();
+  showToast('Product deleted');
+}
+function addNewProduct() {
+  const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+  products.push({
+    id: newId,
+    name: "New Snack",
+    category: "misc",
+    price: 20,
+    stock: 10,
+    available: true,
+    emoji: "🆕",
+    desc: "Freshly added"
+  });
+  saveProducts();
+  renderDevTable();
+  renderProducts();
+  showToast('New product added!');
+}
+// Secret code listener
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  secretBuffer += e.key;
+  if (secretBuffer.length > 8) secretBuffer = secretBuffer.slice(-8);
+  if (secretBuffer === '26052425') {
+    openDev();
+    secretBuffer = '';
+    showToast('🛠️ Developer Mode Unlocked!');
+  }
+});
+// Also allow typing the code in search
+document.getElementById('searchInput').addEventListener('input', e => {
+  const val = e.target.value.trim();
+  if (val === '26052425') {
+    openDev();
+    e.target.value = '';
+    showToast('🛠️ Developer Mode Unlocked!');
+  }
+  renderProducts(val);
+});
+// Category buttons
+document.getElementById('categories').addEventListener('click', e => {
+  if (e.target.classList.contains('cat-btn')) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentCategory = e.target.dataset.cat;
+    renderProducts(document.getElementById('searchInput').value);
+  }
+});
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+// Start
+renderProducts();
+updateCartCount();
+</script>
+</body>
+</html>
