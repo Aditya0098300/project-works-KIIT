@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoxWrite – your assignments, read aloud</title>
+<style>
+:root{--bg:#fff;--ink:#0a0a0a;--muted:#6b6b6b;--line:rgba(0,0,0,.16);--glass:rgba(255,255,255,.7);--err:#b00020;color-scheme:light}
+:root[data-theme="dark"]{--bg:#000;--ink:#f5f5f5;--muted:#9b9b9b;--line:rgba(255,255,255,.2);--glass:rgba(255,255,255,.07);--err:#ff7b7b;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+header{display:flex;justify-content:space-between;align-items:center;max-width:1100px;margin:0 auto;padding:18px 5vw}
+header b{font-size:1.4rem;letter-spacing:-.03em}
+main{max-width:1100px;margin:0 auto;padding:0 5vw 60px;display:grid;gap:24px}
+@media(min-width:900px){main{grid-template-columns:1.5fr 1fr}}
+.card{background:var(--glass);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:24px;padding:22px}
+h1{font-weight:300;font-size:clamp(2.2rem,6vw,4rem);letter-spacing:-.04em;margin:0 0 6px}
+h2{font-size:1rem;margin:0 0 10px}
+.muted{color:var(--muted);font-size:.9rem}
+.btn{font:inherit;font-weight:600;font-size:.92rem;padding:9px 15px;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:999px;cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.solid,.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.drop{border:1.5px dashed var(--line);border-radius:18px;padding:26px;text-align:center;cursor:pointer}
+.drop.over{border-color:var(--ink)}
+textarea{width:100%;min-height:200px;margin-top:8px;font:inherit;line-height:1.7;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:14px;padding:14px;resize:vertical}
+.reader{max-height:60vh;overflow-y:auto;font-size:1.2rem;line-height:1.8}
+.reader p{margin:0 0 1em}
+.s{padding:.05em .15em;border-radius:6px;cursor:pointer}
+.s.read{color:var(--muted)}
+.s.on{background:var(--ink);color:var(--bg)}
+.bar{height:5px;margin-top:16px;border-radius:3px;background:var(--line);overflow:hidden}
+#bar{display:block;height:100%;width:0;background:var(--ink);transition:width .25s}
+.ctl{display:grid;gap:22px;align-content:start}
+.tr{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:8px}
+select{width:100%;font:inherit;padding:9px 12px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:12px}
+label{display:flex;justify-content:space-between;font-weight:600;font-size:.9rem;margin-top:12px}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.dot{display:inline-block;width:9px;height:9px;margin-right:8px;border-radius:50%;background:currentColor;opacity:.35}
+.dot.live{opacity:1;animation:p 1.4s ease-in-out infinite}
+@keyframes p{50%{transform:scale(.55);opacity:.5}}
+.status{min-height:1.4em;font-size:.92rem;color:var(--muted)}
+.status.err{color:var(--err);font-weight:600}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+</style>
+</head>
+<body>
+<header><b>VoxWrite</b><button class="btn" id="theme" type="button">Dark mode</button></header>
+
+<main>
+  <section class="card">
+    <h1>Your assignments, read aloud.</h1>
+    <p class="muted">Upload a PDF, Word or text file, or paste text. Then press Play or turn on voice commands.</p>
+    <div id="editor">
+      <div class="drop" id="drop"><strong>Drop your file here or click to browse</strong><p class="muted">PDF, .docx, .txt (up to 20 MB)</p>
+        <input type="file" id="file" accept=".pdf,.docx,.txt,.md" hidden></div>
+      <textarea id="input" placeholder="Or paste your assignment here…" spellcheck="false"></textarea>
+      <div class="row"><span class="muted" id="wc"></span></div>
+    </div>
+    <div class="reader" id="reader" hidden></div>
+    <div class="bar"><i id="bar"></i></div>
+    <p class="muted" id="pos">Nothing playing</p>
+  </section>
+
+  <aside class="ctl">
+    <div class="card">
+      <h2>Playback</h2>
+      <div class="tr">
+        <button class="btn" id="prev" type="button" disabled>Previous</button>
+        <button class="btn solid" id="play" type="button">Play</button>
+        <button class="btn" id="next" type="button" disabled>Next</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="repeat" type="button" disabled>Repeat sentence</button>
+        <button class="btn" id="stop" type="button" disabled>Stop and edit</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Voice</h2>
+      <select id="voice" aria-label="Voice"><option>Loading voices…</option></select>
+      <label for="rate">Speed <span id="rateOut"></span></label><input id="rate" type="range" min="0.5" max="2" step="0.05" value="1">
+      <label for="pitch">Pitch <span id="pitchOut"></span></label><input id="pitch" type="range" min="0.5" max="1.5" step="0.05" value="1">
+      <label for="volume">Volume <span id="volumeOut"></span></label><input id="volume" type="range" min="0" max="1" step="0.05" value="1">
+    </div>
+
+    <div class="card">
+      <h2>Hands-free</h2>
+      <button class="btn" id="mic" type="button" aria-pressed="false"><span class="dot" id="dot"></span><span id="micLbl">Voice commands: Off</span></button>
+      <p class="muted" id="heard" aria-live="polite" style="margin-top:10px;min-height:2.6em">Say “play”, “pause”, “repeat this line” or “next”. Use headphones.</p>
+      <div class="row" id="say">
+        <button class="btn" type="button" data-say="play">Play</button>
+        <button class="btn" type="button" data-say="pause">Pause</button>
+        <button class="btn" type="button" data-say="repeat this line">Repeat</button>
+        <button class="btn" type="button" data-say="next">Next</button>
+        <button class="btn" type="button" data-say="previous">Previous</button>
+        <button class="btn" type="button" data-say="slower">Slower</button>
+        <button class="btn" type="button" data-say="faster">Faster</button>
+      </div>
+      <details style="margin-top:12px"><summary><b>All voice commands</b></summary>
+        <p class="muted"><b>Playback:</b> play, read aloud, pause, resume, stop<br>
+        <b>Sentences:</b> repeat this line, next sentence, previous sentence<br>
+        <b>Paragraphs:</b> next, previous, paragraph 3, start over<br>
+        <b>Voice:</b> slower, faster, speed 1.5, normal speed, louder, quieter, deeper voice<br>
+        <b>Site:</b> dark mode, light mode, help, stop listening</p>
+      </details>
+    </div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+  </aside>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id), root=document.documentElement;
+const msg=(t,err)=>{const s=$('status');s.textContent=t;s.classList.toggle('err',!!err)};
+const synth=window.speechSynthesis;
+if(!synth||!window.SpeechSynthesisUtterance){msg('This browser cannot read aloud. Use Chrome or Edge.',true);return}
+
+/* theme */
+function setTheme(m){root.setAttribute('data-theme',m);$('theme').textContent=m==='dark'?'Light mode':'Dark mode'}
+setTheme(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+$('theme').onclick=()=>setTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+
+/* loading documents */
+const clean=r=>r.replace(/\r/g,'').replace(/-\n(?=[a-z])/g,'').replace(/([^\n])\n(?!\n)/g,'$1 ').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();
+async function readPdf(f){
+  if(!window.pdfjsLib)throw new Error('The PDF reader did not load. Check your internet connection.');
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,pages=[];
+  for(let n=1;n<=pdf.numPages;n++){
+    const tc=await(await pdf.getPage(n)).getTextContent();let last=null,txt='';
+    tc.items.forEach(it=>{const y=it.transform[5],h=it.height||12;
+      if(last!==null&&Math.abs(y-last)>h*.5)txt+=Math.abs(y-last)>h*1.9?'\n\n':'\n';
+      txt+=it.str;last=y});
+    pages.push(txt)}
+  return clean(pages.join('\n\n'));
+}
+async function loadFile(f){
+  if(!f)return;
+  const ext=(f.name.split('.').pop()||'').toLowerCase();
+  if(!['pdf','docx','txt','md'].includes(ext)){msg('Use a PDF, Word (.docx) or text file.',true);return}
+  if(f.size>20*1024*1024){msg('That file is over 20 MB.',true);return}
+  msg('Reading '+f.name+'…');
+  try{
+    let text;
+    if(ext==='pdf')text=await readPdf(f);
+    else if(ext==='docx'){if(!window.mammoth)throw new Error('The Word reader did not load. Check your internet connection.');text=(await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value}
+    else text=await f.text();
+    text=text.trim();
+    if(text.length<20)throw new Error('No readable text found. Scanned PDFs need OCR.');
+    $('input').value=text;countWords();msg('Loaded '+f.name+'. Press Play or say “play”.');
+  }catch(e){msg(e.message||'Could not read that file.',true)}
+  $('file').value='';
+}
+function countWords(){const t=$('input').value.trim();$('wc').textContent=t?t.split(/\s+/).length+' words':''}
+$('input').addEventListener('input',countWords);
+$('drop').onclick=()=>$('file').click();
+$('file').onchange=()=>loadFile($('file').files[0]);
+['dragenter','dragover'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.add('over')}));
+['dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.remove('over')}));
+$('drop').addEventListener('drop',e=>loadFile(e.dataTransfer.files[0]));
+
+/* speech engine */
+const S={sents:[],ps:[],idx:0,mode:'idle',reading:false,run:0,voices:[]};
+const set={voiceURI:'',rate:1,pitch:1,volume:1};
+
+function sentences(p){
+  let segs;
+  if(window.Intl&&Intl.Segmenter)segs=[...new Intl.Segmenter(navigator.language||'en',{granularity:'sentence'}).segment(p)].map(x=>x.segment.trim());
+  else segs=p.match(/[^.!?]+[.!?]+["’”')\]]*|[^.!?]+$/g)||[p];
+  const out=[];
+  segs.forEach(s=>{while(s.length>240){let c=s.lastIndexOf(' ',240);if(c<80)c=240;out.push(s.slice(0,c).trim());s=s.slice(c).trim()}if(s)out.push(s)});
+  return out;
+}
+function build(text){
+  S.sents=[];S.ps=[];$('reader').textContent='';
+  text.split(/\n\s*\n/).map(p=>p.replace(/\s+/g,' ').trim()).filter(Boolean).forEach(p=>{
+    const ss=sentences(p);if(!ss.length)return;
+    const pe=document.createElement('p');S.ps.push(S.sents.length);
+    ss.forEach(t=>{const i=S.sents.length,sp=document.createElement('span');sp.className='s';sp.textContent=t;sp.onclick=()=>jump(i);S.sents.push({t,p:S.ps.length-1,e:sp});pe.append(sp,' ')});
+    $('reader').append(pe)});
+}
+function paint(){
+  $('play').textContent=S.mode==='playing'?'Pause':S.mode==='paused'?'Resume':'Play';
+  ['prev','next','repeat','stop'].forEach(k=>$(k).disabled=!S.reading);
+}
+function show(on){S.reading=on;$('reader').hidden=!on;$('editor').hidden=on;paint()}
+function update(done){
+  S.sents.forEach((s,i)=>{s.e.classList.toggle('on',i===S.idx&&!done);s.e.classList.toggle('read',done||i<S.idx)});
+  const c=S.sents[S.idx],n=S.sents.length,r=$('reader');
+  if(c&&!done)r.scrollTo({top:c.e.offsetTop-r.clientHeight/2+c.e.offsetHeight/2,behavior:'smooth'});
+  $('bar').style.width=n?Math.round((done?n:S.idx+1)/n*100)+'%':'0%';
+  $('pos').textContent=!n?'Nothing playing':done?'Finished, '+n+' sentences':'Paragraph '+(c.p+1)+' of '+S.ps.length+', sentence '+(S.idx+1)+' of '+n;
+}
+function apply(u){const v=S.voices.find(x=>x.voiceURI===set.voiceURI);if(v){u.voice=v;u.lang=v.lang}u.rate=set.rate;u.pitch=set.pitch;u.volume=set.volume}
+function speakCurrent(){
+  const run=++S.run;synth.cancel();
+  const u=new SpeechSynthesisUtterance(S.sents[S.idx].t);apply(u);
+  u.onend=()=>{
+    if(run!==S.run||S.mode!=='playing')return;
+    if(S.idx<S.sents.length-1){S.idx++;speakCurrent()}else finish();
+  };
+  u.onerror=e=>{if(run!==S.run||e.error==='canceled'||e.error==='interrupted')return;S.mode='paused';paint();msg('Speech failed ('+e.error+'). Try another voice, then press Resume.',true)};
+  synth.speak(u);update();
+}
+function start(){
+  const t=$('input').value.trim();
+  if(!t){msg('Add some text or upload a document first.',true);return false}
+  build(t);
+  if(!S.sents.length){msg('No readable sentences found.',true);return false}
+  S.idx=0;show(true);S.mode='playing';paint();msg('');speakCurrent();return true;
+}
+function pause(){S.run++;synth.cancel();S.mode='paused';paint()}
+function resume(){S.mode='playing';paint();speakCurrent()}
+function jump(i){if(!S.reading)return;S.idx=Math.max(0,Math.min(i,S.sents.length-1));S.mode='playing';paint();speakCurrent()}
+function nextPara(){if(!S.reading)return;const p=S.sents[S.idx].p;if(p<S.ps.length-1)jump(S.ps[p+1]);else msg('You are at the last paragraph.')}
+function prevPara(){if(!S.reading)return;const p=S.sents[S.idx].p;jump(S.idx>S.ps[p]?S.ps[p]:p>0?S.ps[p-1]:0)}
+function repeat(){if(S.reading)jump(S.idx)}
+function stop(){S.run++;synth.cancel();S.mode='idle';show(false);S.sents=[];S.idx=0;update();msg('Stopped. You can edit the text.')}
+function finish(){S.mode='idle';S.idx=S.sents.length-1;update(true);paint();msg('Finished. Press Play to listen again.')}
+function toggle(){S.mode==='playing'?pause():S.mode==='paused'?resume():start()}
+$('play').onclick=toggle;$('prev').onclick=prevPara;$('next').onclick=nextPara;$('repeat').onclick=repeat;$('stop').onclick=stop;
+
+/* voices and sliders */
+const NATURAL=/natural|neural|online|wavenet|enhanced|premium|google/i;
+function loadVoices(){
+  const all=synth.getVoices();if(!all.length)return;
+  const lg=(navigator.language||'en').slice(0,2).toLowerCase();
+  S.voices=all.slice().sort((a,b)=>(/en-IN/i.test(b.lang)-/en-IN/i.test(a.lang))||(b.lang.toLowerCase().startsWith(lg)-a.lang.toLowerCase().startsWith(lg))||a.name.localeCompare(b.name));
+  const sel=$('voice');sel.textContent='';
+  [['AI natural voices',true],['Standard voices',false]].forEach(([label,nat])=>{
+    const list=S.voices.filter(v=>NATURAL.test(v.name)===nat);if(!list.length)return;
+    const og=document.createElement('optgroup');og.label=label;
+    list.forEach(v=>{const o=document.createElement('option');o.value=v.voiceURI;o.textContent=v.name+' ('+v.lang+')';og.append(o)});
+    sel.append(og)});
+  if(!S.voices.some(v=>v.voiceURI===set.voiceURI)){const f=sel.querySelector('option');set.voiceURI=f?f.value:''}
+  sel.value=set.voiceURI;
+}
+const fmt={rate:v=>v.toFixed(2)+'×',pitch:v=>v.toFixed(2),volume:v=>Math.round(v*100)+'%'};
+function paintSliders(){['rate','pitch','volume'].forEach(k=>{$(k).value=set[k];$(k+'Out').textContent=fmt[k](+set[k])})}
+const live=()=>{if(S.mode==='playing')speakCurrent()};
+$('voice').onchange=()=>{set.voiceURI=$('voice').value;live()};
+['rate','pitch','volume'].forEach(k=>{
+  $(k).addEventListener('input',()=>{set[k]=+$(k).value;paintSliders()});
+  $(k).addEventListener('change',live)});
+loadVoices();synth.addEventListener('voiceschanged',loadVoices);paintSliders();
+
+/* voice commands */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,micOn=false;
+const paintMic=()=>{$('mic').setAttribute('aria-pressed',micOn);$('micLbl').textContent='Voice commands: '+(micOn?'On':'Off');$('dot').classList.toggle('live',micOn)};
+const NUM={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+const needRead=()=>{if(S.reading)return true;msg('Say “play” first to start reading.',true);return false};
+const setRate=v=>{set.rate=Math.min(2,Math.max(.5,+(+v).toFixed(2)));paintSliders();live();return 'Speed '+fmt.rate(set.rate)};
+const adj=(k,d,lo,hi,name)=>{set[k]=Math.min(hi,Math.max(lo,+(+set[k]+d).toFixed(2)));paintSliders();live();return name+' '+fmt[k](set[k])};
+const themeTo=m=>{setTheme(m);return (m==='dark'?'Dark':'Light')+' mode'};
+const stepSentence=d=>{
+  if(!needRead())return false;
+  const i=S.idx+d;
+  if(i<0||i>=S.sents.length){msg(d>0?'That is the last sentence.':'That is the first sentence.');return false}
+  jump(i);return d>0?'Next sentence':'Previous sentence';
+};
+function micOff(){micOn=false;if(rec){rec.onend=null;try{rec.stop()}catch(x){}}paintMic();msg('Voice commands off.')}
+
+/* The first matching pattern wins, so specific phrases come before general ones. */
+const CMDS=[
+ [/\b(stop listening|mic off|microphone off|voice commands off)\b/,()=>{micOff();return 'Voice commands off'}],
+ [/\b(help|what can i say|show commands)\b/,()=>{document.querySelector('details').open=true;return 'Showing the command list'}],
+ [/\b(dark mode|night mode)\b/,()=>themeTo('dark')],
+ [/\b(light mode|day mode)\b/,()=>themeTo('light')],
+ [/\b(start over|restart|from the beginning)\b/,()=>{if(!needRead())return false;jump(0);return 'From the beginning'}],
+ [/\bparagraph (\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/,m=>{
+   if(!needRead())return false;
+   const n=+m[1]||NUM[m[1]];
+   if(n<1||n>S.ps.length){msg('This document has '+S.ps.length+' paragraphs.',true);return false}
+   jump(S.ps[n-1]);return 'Paragraph '+n}],
+ [/\bspeed (?:to )?(\d(?:\.\d+)?)\b/,m=>setRate(m[1])],
+ [/\b(normal|default|regular) speed\b/,()=>setRate(1)],
+ [/\b(repeat|again|say that|one more time|replay)\b/,()=>{if(!needRead())return false;repeat();return 'Repeating the sentence'}],
+ [/\bnext (sentence|line)\b/,()=>stepSentence(1)],
+ [/\b(previous|last|back) (sentence|line)\b/,()=>stepSentence(-1)],
+ [/\b(pause|hold on|hang on|wait|stop (reading|talking))\b/,()=>{if(S.mode!=='playing'){msg('Nothing is playing.',true);return false}pause();return 'Paused'}],
+ [/\b(stop|edit)\b/,()=>{if(!needRead())return false;stop();return 'Stopped'}],
+ [/\b(next|skip|forward)\b/,()=>{if(!needRead())return false;nextPara();return 'Next paragraph'}],
+ [/\b(previous|back|go back|rewind)\b/,()=>{if(!needRead())return false;prevPara();return 'Previous paragraph'}],
+ [/\b(slower|slow down|too fast)\b/,()=>adj('rate',-.2,.5,2,'Speed')],
+ [/\b(faster|speed up|too slow)\b/,()=>adj('rate',.2,.5,2,'Speed')],
+ [/\b(louder|volume up|turn it up)\b/,()=>adj('volume',.15,0,1,'Volume')],
+ [/\b(quieter|softer|volume down|turn it down)\b/,()=>adj('volume',-.15,0,1,'Volume')],
+ [/\b(deeper|lower (the )?pitch)\b/,()=>adj('pitch',-.1,.5,1.5,'Pitch')],
+ [/\b(higher pitch|lighter voice)\b/,()=>adj('pitch',.1,.5,1.5,'Pitch')],
+ [/\b(play|resume|continue|go on|keep going|read aloud|read (it|this|that|out)|start|begin)\b/,()=>{
+   if(S.mode==='playing'){msg('Already reading.');return false}
+   if(S.mode==='paused')resume();else if(!start())return false;
+   return 'Reading'}]
+];
+
+const norm=t=>t.toLowerCase().replace(/[^a-z0-9.\s]/g,' ')
+  .replace(/\b(hey|okay|ok|please|vox ?write|could you|can you|would you|will you)\b/g,' ')
+  .replace(/\.(?!\d)/g,' ').replace(/\s+/g,' ').trim();
+
+function command(raw,fromButton){
+  const t=norm(raw);if(!t)return;
+  let hit=false,out=null;
+  /* Only short phrases count, so the document being read aloud cannot trigger commands by accident. */
+  if(fromButton||t.split(' ').length<=7){
+    for(const [re,fn] of CMDS){const m=t.match(re);if(m){hit=true;out=fn(m);break}}
+  }
+  $('heard').textContent=(fromButton?'Command':'Heard')+': “'+raw+'”'+(hit?(out?'  →  '+out:''):' (not a command)');
+  if(hit&&out)msg(out+'.');
+}
+
+function listen(){
+  rec=new SR();rec.continuous=true;rec.interimResults=false;
+  rec.lang='en-IN'; /* change to 'en-US' or 'en-GB' if your accent is not recognised well */
+  rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)command(e.results[i][0].transcript)};
+  rec.onerror=e=>{
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){micOn=false;paintMic();msg('Microphone blocked. Allow it in your browser, and open this page from http://localhost or https (not by double-clicking the file).',true)}
+    else if(e.error==='audio-capture'){micOn=false;paintMic();msg('No microphone was found.',true)}
+    else if(e.error==='network'){micOn=false;paintMic();msg('Speech recognition needs an internet connection.',true)}
+    else if(e.error!=='no-speech'&&e.error!=='aborted')msg('Voice commands error: '+e.error,true)};
+  rec.onend=()=>{if(micOn)setTimeout(()=>{if(micOn){try{rec.start()}catch(x){}}},300)};
+  micOn=true;try{rec.start()}catch(x){}paintMic();msg('Listening. Say “play” or “help”.');
+}
+$('mic').onclick=()=>{
+  if(!SR){msg('Voice commands need Chrome or Edge.',true);return}
+  if(location.protocol==='file:')msg('Tip: if the mic is blocked, run a local server and open http://localhost:8000 instead of the file.');
+  micOn?micOff():listen();
+};
+/* The on-screen buttons run the same command engine, so you can test without a microphone. */
+document.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>command(b.dataset.say,true));
+
+/* keyboard: Space play/pause, arrows paragraphs, R repeat, Esc stop */
+addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  if(['textarea','input','select','button'].includes((e.target.tagName||'').toLowerCase()))return;
+  if(e.key===' '){e.preventDefault();toggle()}
+  else if(e.key==='ArrowRight')nextPara();
+  else if(e.key==='ArrowLeft')prevPara();
+  else if(e.key==='r'||e.key==='R')repeat();
+  else if(e.key==='Escape'&&S.reading)stop();
+});
+addEventListener('beforeunload',()=>synth.cancel());
+paint();
+})();
+</script>
+</body>
+</html>
